@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 
-var VERSION = "1.2.0";
+var VERSION = "1.3.0";
 
 /* =======================================================
    1. ข้อมูลธีม
@@ -204,6 +204,8 @@ function doCheckIn(){
 var G = {n:4, mode:"m4", grid:null, score:0, uid:1, over:false, won:false, keep:false,
          prev:null, rng:Math.random, step:0, size:0, live:false, t0:0, rad:null, fvar:'"SOFT" 40'};
 var stage = document.getElementById("stage");
+var wrapEl = document.getElementById("stagewrap");
+var gameView = document.querySelector('[data-view="game"]');
 var slotsEl = document.getElementById("slots");
 var tilesEl = document.getElementById("tiles");
 var scoreEl = document.getElementById("score");
@@ -350,8 +352,14 @@ function radiusPx(){
   return G.rad;
 }
 function sizeBoard(){
-  var w = stage.clientWidth;
-  if (!w) return;
+  // ตอนเล่นเต็มจอ กระดานต้องพอดีกับด้านที่แคบกว่าของพื้นที่ว่าง
+  var avail = wrapEl.clientWidth;
+  var h = wrapEl.clientHeight;
+  if (document.body.classList.contains("playing") && h) avail = Math.min(avail, h);
+  var w = Math.floor(avail);
+  if (w < 120) return;
+  stage.style.width = w + "px";
+
   var pad = Math.round(w * 0.032), gap = Math.round(w * (G.n >= 5 ? 0.022 : 0.028));
   G.size = (w - pad*2 - gap*(G.n-1)) / G.n;
   G.step = G.size + gap;
@@ -510,6 +518,47 @@ function undo(){
   killVeil(); renderBoard(true); paintScore(false);
 }
 
+/* ---- กล่องยืนยัน ---- */
+function ask(title, msg, okText, danger){
+  return new Promise(function(res){
+    var m = document.createElement("div"); m.className = "modal";
+    var b = document.createElement("div"); b.className = "box";
+    var h = document.createElement("h3"); h.textContent = title;
+    var p = document.createElement("p"); p.textContent = msg;
+    var row = document.createElement("div"); row.className = "vrow";
+    var no = document.createElement("button");
+    no.className = "btn"; no.type = "button"; no.textContent = "ยกเลิก";
+    var yes = document.createElement("button");
+    yes.className = "btn primary"; yes.type = "button"; yes.textContent = okText || "ตกลง";
+    if (danger){ yes.style.background = "#c0392b"; yes.style.color = "#fff"; }
+    function close(v){
+      m.remove();
+      document.removeEventListener("keydown", esc, true);
+      res(v);
+    }
+    function esc(e){
+      if (e.key === "Escape"){ e.stopPropagation(); e.preventDefault(); close(false); }
+      if (e.key === "Enter"){ e.stopPropagation(); e.preventDefault(); close(true); }
+    }
+    no.addEventListener("click", function(){ close(false); });
+    yes.addEventListener("click", function(){ close(true); });
+    m.addEventListener("click", function(e){ if (e.target === m) close(false); });
+    document.addEventListener("keydown", esc, true);
+    row.appendChild(no); row.appendChild(yes);
+    b.appendChild(h); b.appendChild(p); b.appendChild(row);
+    m.appendChild(b);
+    document.body.appendChild(m);
+    yes.focus();
+  });
+}
+function gameInProgress(){ return !!(G.grid && G.live && !G.over && G.score > 0); }
+function confirmOverwrite(){
+  if (!gameInProgress()) return Promise.resolve(true);
+  return ask("เริ่มเกมใหม่?",
+    "เกม" + MODES[G.mode].t + " ที่ค้างอยู่ " + fmt(G.score) + " คะแนน จะหายไป",
+    "เริ่มใหม่");
+}
+
 var KEYS = {ArrowUp:"up",ArrowRight:"right",ArrowDown:"down",ArrowLeft:"left",
   w:"up",d:"right",s:"down",a:"left",W:"up",D:"right",S:"down",A:"left"};
 document.addEventListener("keydown", function(e){
@@ -518,24 +567,30 @@ document.addEventListener("keydown", function(e){
   if (view !== "game") return;
   if (KEYS[e.key]){ e.preventDefault(); move(KEYS[e.key]); return; }
   if (e.key === "z" || e.key === "Z"){ e.preventDefault(); undo(); }
-  if (e.key === "r" || e.key === "R"){ e.preventDefault(); startGame(G.mode); }
+  if (e.key === "r" || e.key === "R"){
+    e.preventDefault();
+    confirmOverwrite().then(function(ok){ if (ok) startGame(G.mode); });
+  }
 });
 var sx=0, sy=0, tracking=false;
-stage.addEventListener("pointerdown", function(e){
-  if (e.target.closest(".veil")) return;
+// รับการปัดจากทั้งหน้าเกม เพื่อให้นิ้วออกนอกกระดานแล้วยังสั่งได้
+gameView.addEventListener("pointerdown", function(e){
+  if (e.target.closest(".veil") || e.target.closest("button")) return;
   tracking = true; sx = e.clientX; sy = e.clientY;
 });
-stage.addEventListener("pointerup", function(e){
+gameView.addEventListener("pointerup", function(e){
   if (!tracking) return;
   tracking = false;
   var dx = e.clientX - sx, dy = e.clientY - sy, ax = Math.abs(dx), ay = Math.abs(dy);
   if (Math.max(ax,ay) < 20) return;
   move(ax > ay ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
 });
-stage.addEventListener("pointercancel", function(){ tracking = false; });
-stage.addEventListener("touchmove", function(e){ if (tracking) e.preventDefault(); }, {passive:false});
+gameView.addEventListener("pointercancel", function(){ tracking = false; });
+gameView.addEventListener("touchmove", function(e){ if (tracking) e.preventDefault(); }, {passive:false});
 undoBtn.addEventListener("click", undo);
-document.getElementById("restart").addEventListener("click", function(){ startGame(G.mode); });
+document.getElementById("restart").addEventListener("click", function(){
+  confirmOverwrite().then(function(ok){ if (ok) startGame(G.mode); });
+});
 window.addEventListener("resize", function(){ if (view === "game") sizeBoard(); });
 
 /* =======================================================
@@ -598,7 +653,9 @@ var view = "menu";
 function go2(v){
   view = v;
   document.querySelectorAll(".view").forEach(function(s){ s.classList.toggle("on", s.dataset.view === v); });
+  document.body.classList.toggle("playing", v === "game");
   window.scrollTo(0,0);
+  if (v === "game") requestAnimationFrame(sizeBoard);
   if (v === "menu") renderMenu();
   if (v === "scores") renderScores();
   if (v === "daily") renderDaily();
@@ -653,13 +710,18 @@ function renderMenu(){
 
   document.getElementById("verMenu").textContent = "เวอร์ชัน " + VERSION;
 }
-document.getElementById("playBtn").addEventListener("click", function(){ startGame(pickedMode); });
+document.getElementById("playBtn").addEventListener("click", function(){
+  confirmOverwrite().then(function(ok){ if (ok) startGame(pickedMode); });
+});
 document.getElementById("resumeBtn").addEventListener("click", function(){
   if (!G.grid) return;
   go2("game");
   requestAnimationFrame(function(){ sizeBoard(); paintScore(false); });
 });
-document.getElementById("dailyBtn").addEventListener("click", function(){ startGame("daily"); });
+document.getElementById("dailyBtn").addEventListener("click", function(){
+  if (G.mode === "daily" && gameInProgress()){ go2("game"); requestAnimationFrame(function(){ sizeBoard(); paintScore(false); }); return; }
+  confirmOverwrite().then(function(ok){ if (ok) startGame("daily"); });
+});
 
 /* ---- กระดานคะแนน ---- */
 function renderScores(){
@@ -950,9 +1012,13 @@ function renderSettings(){
 nameIn.addEventListener("input", function(){ P.name = nameIn.value.slice(0,16); saveP(); renderMenu(); });
 nameIn.addEventListener("blur", function(){ submitScore(); });
 document.getElementById("wipe").addEventListener("click", function(){
-  if (!confirm("ล้างชื่อ สถิติ ธีม ของที่ปลดล็อก และประวัติเช็คอินทั้งหมดในเครื่องนี้?")) return;
-  try{ localStorage.removeItem(KEY); }catch(e){}
-  location.reload();
+  ask("ล้างข้อมูลทั้งหมด?",
+      "ชื่อ สถิติ ธีม ของที่ปลดล็อก และประวัติเช็คอินในเครื่องนี้จะถูกลบ กู้คืนไม่ได้",
+      "ล้างข้อมูล", true).then(function(ok){
+    if (!ok) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  });
 });
 
 /* =======================================================

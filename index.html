@@ -35,7 +35,7 @@
       <h1 class="num">2048</h1>
       <p class="who">สวัสดี <b id="whoName">ผู้เล่น</b></p>
     </div>
-    <span class="streakPill" id="streakPill" hidden></span>
+    <button class="streakPill" id="streakPill" type="button" data-go="daily" hidden></button>
   </div>
 
   <div class="card">
@@ -72,9 +72,11 @@
     <div><span>คะแนน</span><b class="num" id="score">0</b></div>
     <div><span>สูงสุด</span><b class="num" id="best">0</b></div>
   </div>
-  <div class="stage" id="stage">
-    <div class="slots" id="slots"></div>
-    <div class="tiles" id="tiles"></div>
+  <div class="stagewrap" id="stagewrap">
+    <div class="stage" id="stage">
+      <div class="slots" id="slots"></div>
+      <div class="tiles" id="tiles"></div>
+    </div>
   </div>
   <div class="bar">
     <button class="btn" id="undo" type="button" disabled>ย้อนกลับ</button>

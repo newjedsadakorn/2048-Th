@@ -3,7 +3,7 @@
             ฟอนต์จาก Google ใช้ stale-while-revalidate
    เวลาแก้ไฟล์เกม ให้ขยับ CACHE เป็นเวอร์ชันใหม่ ไม่งั้นเครื่องที่เคยเปิดจะยังเห็นของเก่า */
 
-var VERSION = "1.2.0";
+var VERSION = "1.3.0";
 var SHELL = "2048-shell-" + VERSION;
 var FONTS = "2048-fonts-v1";
 
