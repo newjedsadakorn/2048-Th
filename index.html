@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>2048</title>
+<meta name="description" content="เกม 2048 พร้อมระบบธีม เช็คอินรายเดือน ท้าทายประจำวัน และกระดานคะแนน">
+<meta name="theme-color" content="#efedf2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141218" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:SOFT,opsz,wght@40,9..144,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="rotate">
+  <span class="ico"></span>
+  <p>หมุนเครื่องเป็นแนวตั้ง</p>
+  <small>เกมนี้ออกแบบมาสำหรับจอแนวตั้งเท่านั้น</small>
+</div>
+
+<div class="app">
+
+<!-- ============ เมนู ============ -->
+<section class="view on" data-view="menu">
+  <div class="hero">
+    <div>
+      <h1 class="num">2048</h1>
+      <p class="who">สวัสดี <b id="whoName">ผู้เล่น</b></p>
+    </div>
+    <span class="streakPill" id="streakPill" hidden></span>
+  </div>
+
+  <div class="card">
+    <div class="modes" id="modes" role="group" aria-label="ขนาดกระดาน"></div>
+    <button class="play" id="playBtn" type="button">เล่น</button>
+    <button class="btn" id="resumeBtn" type="button" hidden style="width:100%;margin-top:8px">เล่นต่อ · <span id="resumeInfo"></span></button>
+    <div class="bestline"><span>สถิติสูงสุดโหมดนี้</span><b id="menuBest">0</b></div>
+  </div>
+
+  <button class="daily" id="dailyBtn" type="button">
+    <span class="badge"><small id="dailyMon">ก.ย.</small><b id="dailyDay">17</b></span>
+    <span class="t"><strong>ท้าทายประจำวัน</strong><span id="dailySub">กระดานเดียวกันทุกคน</span></span>
+    <span style="color:var(--dim);font-size:18px">›</span>
+  </button>
+
+  <div class="tiles-nav">
+    <button class="nav" data-go="scores" type="button"><strong>กระดานคะแนน</strong><span>เทียบกับคนอื่น</span></button>
+    <button class="nav" data-go="daily" type="button"><strong>เช็คอิน</strong><span id="navStreak">ยังไม่เช็ควันนี้</span></button>
+    <button class="nav" data-go="stats" type="button"><strong>สถิติ</strong><span>ประวัติการเล่น</span></button>
+    <button class="nav" data-go="settings" type="button"><strong>ตั้งค่า</strong><span>ธีม ชื่อ และข้อมูล</span></button>
+  </div>
+
+  <p class="ver" id="verMenu"></p>
+</section>
+
+<!-- ============ เกม ============ -->
+<section class="view" data-view="game">
+  <div class="top">
+    <button class="back" data-go="menu" type="button" aria-label="กลับ">‹</button>
+    <h2 id="gameTitle">4 × 4</h2>
+    <span class="side" id="gameSide"></span>
+  </div>
+  <div class="scorebar">
+    <div><span>คะแนน</span><b class="num" id="score">0</b></div>
+    <div><span>สูงสุด</span><b class="num" id="best">0</b></div>
+  </div>
+  <div class="stage" id="stage">
+    <div class="slots" id="slots"></div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+  <div class="bar">
+    <button class="btn" id="undo" type="button" disabled>ย้อนกลับ</button>
+    <button class="btn" id="restart" type="button">เริ่มใหม่</button>
+    <span class="grow"></span>
+    <button class="btn" data-go="menu" type="button">เมนู</button>
+  </div>
+  <p class="hint">ลูกศรหรือ <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · มือถือปัดนิ้ว · <kbd>Z</kbd> ย้อนกลับ</p>
+</section>
+
+<!-- ============ กระดานคะแนน ============ -->
+<section class="view" data-view="scores">
+  <div class="top">
+    <button class="back" data-go="menu" type="button" aria-label="กลับ">‹</button>
+    <h2>กระดานคะแนน</h2>
+  </div>
+  <div class="tabs" id="scoreTabs" role="group" aria-label="เลือกโหมด"></div>
+  <div class="rows" id="scoreRows"></div>
+  <p class="hint" id="scoreNote"></p>
+</section>
+
+<!-- ============ เช็คอิน ============ -->
+<section class="view" data-view="daily">
+  <div class="top">
+    <button class="back" data-go="menu" type="button" aria-label="กลับ">‹</button>
+    <h2>เช็คอิน</h2>
+    <span class="side" id="streakSide"></span>
+  </div>
+  <div class="cal">
+    <div class="mon" id="calMonth"></div>
+    <div class="subm" id="calSub"></div>
+    <div class="grid" id="calGrid"></div>
+  </div>
+  <button class="play" id="checkBtn" type="button">เช็คอินวันนี้</button>
+  <p class="opt" style="margin:2px 0 -8px">ของรางวัลประจำเดือนนี้</p>
+  <div class="rewards" id="rewards"></div>
+  <p class="hint" id="rewardNote"></p>
+</section>
+
+<!-- ============ ธีม ============ -->
+<section class="view" data-view="theme">
+  <div class="top">
+    <button class="back" data-go="settings" type="button" aria-label="กลับ">‹</button>
+    <h2>ธีม</h2>
+    <span class="side" id="themeSide"></span>
+  </div>
+  <div class="preview" id="preview"></div>
+  <div><p class="opt">ชุดสำเร็จ</p><div class="swatches" id="presets"></div></div>
+  <div><p class="opt">พื้นหลังและปุ่ม</p><div class="swatches" id="bgs"></div></div>
+  <div><p class="opt">สีช่องตัวเลข</p><div class="swatches" id="ramps"></div></div>
+  <div><p class="opt">ฟอนต์ตัวเลข</p><div class="fgrid" id="fonts"></div></div>
+  <div><p class="opt">ความโค้ง</p><div class="tabs" id="radii"></div></div>
+</section>
+
+<!-- ============ สถิติ ============ -->
+<section class="view" data-view="stats">
+  <div class="top">
+    <button class="back" data-go="menu" type="button" aria-label="กลับ">‹</button>
+    <h2>สถิติ</h2>
+  </div>
+  <div class="stats" id="statGrid"></div>
+  <p class="opt" style="margin:4px 0 -8px">เกมล่าสุด</p>
+  <div class="rows" id="history"></div>
+</section>
+
+<!-- ============ ตั้งค่า ============ -->
+<section class="view" data-view="settings">
+  <div class="top">
+    <button class="back" data-go="menu" type="button" aria-label="กลับ">‹</button>
+    <h2>ตั้งค่า</h2>
+  </div>
+  <button class="nav wide" data-go="theme" type="button">
+    <span class="g"><strong>ธีมและหน้าตา</strong><span id="themeSum">—</span></span>
+    <span class="arw">›</span>
+  </button>
+  <div class="field">
+    <label for="nameIn">ชื่อที่แสดงบนกระดานคะแนน</label>
+    <input type="text" id="nameIn" maxlength="16" placeholder="ตั้งชื่อ" autocomplete="off">
+  </div>
+  <div class="toggle"><span>เสียงตอนผสมเลขใหญ่</span><button class="sw2" id="tSound" aria-pressed="false" type="button"><i></i></button></div>
+  <div class="toggle"><span>แอนิเมชัน</span><button class="sw2" id="tAnim" aria-pressed="true" type="button"><i></i></button></div>
+  <div class="toggle"><span>เปิดปุ่มย้อนกลับ</span><button class="sw2" id="tUndo" aria-pressed="true" type="button"><i></i></button></div>
+  <button class="btn" id="wipe" type="button"><span class="danger">ล้างข้อมูลทั้งหมด</span></button>
+  <p class="hint">ข้อมูลทั้งหมดเก็บอยู่ในเบราว์เซอร์เครื่องนี้ ยกเว้นคะแนนที่ส่งขึ้นกระดานรวม</p>
+  <p class="ver" id="verSet"></p>
+</section>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

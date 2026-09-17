@@ -1,0 +1,16 @@
+# ผลลัพธ์จากการ build
+dist/
+
+# ระบบปฏิบัติการ
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# เอดิเตอร์
+.vscode/
+.idea/
+*.swp
+
+# node (เผื่ออนาคตมี tooling)
+node_modules/
+npm-debug.log*
